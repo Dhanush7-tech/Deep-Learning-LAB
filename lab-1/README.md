@@ -13,6 +13,30 @@ The perceptron is trained using the classic weight update rule with a step activ
 - **Features:** Variance, Skewness, Curtosis, Entropy
 - **Target:** 0 = Authentic, 1 = Forged
 
+## Dataset Description
+
+**Banknote Authentication Dataset** ([UCI ML Repository](https://archive.ics.uci.edu/dataset/267/banknote+authentication))
+
+Features were extracted from wavelet-transformed images of genuine and forged banknote specimens.
+
+| Property | Value |
+|---|---|
+| Instances | 1372 |
+| Features | 4 (numerical) |
+| Classes | 2 |
+| Missing values | None |
+| Task | Binary Classification |
+
+**Feature columns:**
+- `Variance` – variance of wavelet-transformed image
+- `Skewness` – skewness of wavelet-transformed image
+- `Curtosis` – curtosis of wavelet-transformed image
+- `Entropy` – entropy of the image
+
+**Target column (`Class`):**
+- `0` – Authentic banknote
+- `1` – Forged banknote
+
 ## Workflow
 
 1. **EDA** – summary stats, histograms, correlation heatmap, scatter plot, boxplots
@@ -43,3 +67,4 @@ The model converges quickly, since the two classes are close to linearly separab
 
 - F. Rosenblatt, *The Perceptron*, Psychological Review, 1958
 - UCI ML Repository – Banknote Authentication Dataset
+uthentication Dataset
