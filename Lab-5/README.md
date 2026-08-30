@@ -1,93 +1,101 @@
-# Experiment 5 — CNN Training, Regularization, Optimization, Transfer Learning & Cross-Validation
+# CNN Transfer Learning on Oxford-IIIT Pet Dataset (MobileNetV2)
 
-CS3807 – Deep Learning Laboratory | Shiv Nadar University Chennai
+**CS3807 – Deep Learning Laboratory | Experiment 5**
+Shiv Nadar University Chennai · B.Tech AI & Data Science · Semester V
 
-## Contents
+## Overview
 
-| File | Description |
+This experiment performs a systematic study of how weight initialization,
+regularization, optimization algorithms, hyperparameter choices, and transfer
+learning affect the performance of a CNN image classifier. A single
+architecture — **MobileNetV2**, pretrained on ImageNet — is used throughout
+so that every comparison isolates one design choice at a time.
+
+## Dataset
+
+**Oxford-IIIT Pet Dataset** — 37 cat and dog breeds, RGB images of varying
+size, resized to 224×224×3 for this experiment.
+
+| Split | Images |
 |---|---|
-| `Experiment5_Report.tex` | Full LaTeX source of the completed lab report |
-| `Experiment5_Report.pdf` | Compiled 20-page PDF report |
-| `Experiment5_Plots.zip` | All 15 plots (Plot 1–15) referenced in the report, as PNG images |
-| `README.md` | This file |
+| Train-val pool | 3,680 |
+| Test (held out, untouched until final evaluation) | 3,669 |
+| → Train | 3,128 |
+| → Validation | 552 |
 
-## What's in the report
+Inputs are normalized to ImageNet statistics. The test set was kept
+completely separate from all training/tuning and only used once, at the very
+end, to evaluate the final selected model.
 
-The report follows the official Experiment 5 template section-by-section, with all
-placeholder tables and figures filled in using the actual training logs and plots
-generated for this run:
+## Method / What was tested
 
-1. Objective, Learning Outcomes, Dataset/Setup, MobileNetV2 architecture
-2. Weight Initialization (Zero / Random / Xavier / He) — Plots 1–2
-3. Regularization & Overfitting (None / L2 / Dropout / BatchNorm) — Plots 3–4
-4. Batch Normalization (worked numerical example + with/without BN) — Plot 5
-5. Optimizers (SGD / Momentum / RMSProp / Adam) — Plots 6–7
-6. CNN Hyperparameter Tuning (learning rate, batch size, dropout rate) — Plots 8–10
-7. Transfer Learning vs. Fine-Tuning (Case A vs. Case B) — Plots 11–12
-8. 5-Fold Cross-Validation over configurations C1–C4 — Plot 13
-9. Final Model Evaluation (confusion matrix, misclassified samples) — Plots 14–15
-10. Overall Results summary table
-11. All 23 discussion questions, answered
-12. Additional Exercise (proposed follow-up configurations C5/C6)
+1. **Weight initialization** — Zero, Random, Xavier/Glorot, He
+2. **Regularization** — None, L2, Dropout, Batch Normalization
+3. **Batch Normalization** — worked numerical example + with-vs-without comparison
+4. **Optimizers** — SGD, Momentum, RMSProp, Adam
+5. **Hyperparameter tuning** (one factor at a time) — learning rate (0.001 / 0.0001), batch size (16 / 32 / 64), dropout rate (0 / 0.25 / 0.5), optimizer (SGD / Adam), fine-tuning LR (1e-4 / 1e-5), frozen vs. partially-unfrozen backbone
+6. **Transfer learning** — Case A: feature extraction (frozen backbone) vs. Case B: fine-tuning (unfrozen upper layers, small LR)
+7. **Model selection** — 5-fold cross-validation over 4 candidate configurations (C1–C4)
+8. **Final evaluation** — best configuration retrained on full training data, evaluated once on the untouched test set
 
-Every plot is followed by a short **Inference** paragraph (what the plot shows, the
-trend, and why), as required by Section 14 of the template.
+## Key Results
 
-## How to recompile the PDF
+**Initialization** — all four methods converge to similar loss/accuracy by
+epoch 10 (the backbone is pretrained, so only a shallow head is randomly
+initialized). **He initialization** gave the best final validation accuracy
+(89.13%).
 
-The report is a single-file LaTeX document with no external `.bib` file. From a
-TeX Live (or similar) installation:
+**Regularization** — "None" and "L2" clearly overfit (train accuracy ~96%
+vs. validation ~87–88%, gap of 7.9–8.8 points). **Dropout** and **Batch
+Normalization** kept the train/val gap under 1 point, with Dropout the most
+effective at closing the gap and Batch Normalization showing no detectable
+overfitting onset within 10 epochs.
 
-```bash
-pdflatex Experiment5_Report.tex
-pdflatex Experiment5_Report.tex   # run twice to resolve section numbering/refs
-```
+**Optimizers** — plain **SGD** converged much slower than the others (still
+improving at epoch 10). **Momentum, RMSProp, and Adam** all reached
+85–89% validation accuracy within 2–3 epochs; Momentum and RMSProp were the
+fastest and strongest overall.
 
-Requires the images from `Experiment5_Plots.zip` to be unzipped into an `img/`
-subfolder alongside the `.tex` file, using these filenames (already matched to the
-`\includegraphics` calls in the source):
+**Hyperparameters** — best settings found: learning rate **0.001** (0.0001
+was far too slow in the 5-epoch budget, only reaching 70%), batch size
+**64**, dropout rate **0.25** (a sweet spot — 0.5 was worse), Adam over SGD,
+and fine-tuning LR **1e-4** over 1e-5.
 
-```
-img/plot1_init_loss.png
-img/plot2_init_valacc.png
-img/plot3_reg_acc.png
-img/plot4_reg_loss.png
-img/plot5_bn.png
-img/plot6_opt_loss.png
-img/plot7_opt_valacc.png
-img/plot8_lr.png
-img/plot9_batch.png
-img/plot10_dropout.png
-img/plot11_fe_ft.png
-img/plot12_loss_beforeafter.png
-img/plot13_cv.png
-img/plot14_confmat.png
-img/plot15_misclassified.png
-```
+**Transfer learning** — **fine-tuning** (unfreezing upper backbone layers
+with a small LR) beat pure feature extraction: 89.67% vs. 87.86% final
+validation accuracy.
 
-Packages used (all standard, included in most TeX distributions):
-`geometry, graphicx, amsmath, amssymb, booktabs, array, longtable, float,
-hyperref, enumitem, fancyhdr, titlesec, xcolor`.
+**Cross-validation (C1–C4)** — the fine-tuned configuration **C4** had the
+best mean CV accuracy among the four candidates, with moderate fold-to-fold
+variability.
 
-## Known data note — please check before submitting
+**Final model (test set)** — the selected configuration was retrained and
+evaluated once on the untouched 3,669-image test set:
 
-Section 11 (K-Fold Cross-Validation) computes the final configuration C4's mean CV
-accuracy directly from the 5 fold values you provided (84.78, 86.55, 88.45, 84.78,
-87.91 → **86.49% ± 1.53**).
+| Metric | Value |
+|---|---|
+| Test Accuracy | 87.52% |
+| Precision | 87.63% |
+| Recall | 87.43% |
+| F1-score | 87.30% |
+| Trainable / Total Parameters | 47,397 / 2,271,269 |
+| Training Time | 170.48 sec |
 
-Section 13 (Overall Results) currently shows C4's CV Accuracy as **89.46%**, per
-values you gave separately for that summary table. These two numbers for the same
-configuration don't match. If 89.46% is the correct final figure, let me know and
-I'll update the Section 11 fold table/mean (and the related inference text) so the
-whole report is internally consistent — right now the two sections tell slightly
-different stories about C4's performance.
+**Confusion matrix** — best-classified breeds included Keeshond (100%),
+Samoyed, Leonberger, and Yorkshire Terrier (98% each); the hardest breeds
+were visually similar same-species pairs — **Staffordshire Bull Terrier vs.
+American Pit Bull Terrier** and **Birman vs. Ragdoll** — reflecting genuine
+fine-grained visual similarity rather than a model-specific weakness.
 
-## Editable placeholders worth reviewing
+## Files
 
-- **Section 11**, C1–C3 configuration *descriptions* (exact hyperparameters) were
-  inferred from context since only accuracy numbers were supplied — replace with
-  your actual settings if different.
-- **Section 8** (Optimizer table), per-optimizer training *time* was not in the
-  logs, so it's marked "Not individually timed."
-- **Section 16** (Additional Exercise), configurations C5/C6 are proposed, not
+- `Experiment5_Report.pdf` / `.tex` — full write-up with all plots, tables, inferences, and answers to the discussion questions
+- `Experiment5_Plots.zip` — all 15 plots as PNGs
+
+## Note on figures
+
+CV Accuracy values in the Overall Results summary (Section 13 of the report)
+and the fold-by-fold mean computed for C4 in Section 11 currently differ
+(86.49% vs. 89.46%) — worth reconciling against your actual run logs before
+final submission.
   run — no training logs exist for them in this submission.
